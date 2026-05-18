@@ -1,0 +1,68 @@
+# ============================================================
+# Tree-RL Default Configuration
+# Tất cả giá trị lấy trực tiếp từ bài báo NIPS 2016
+# ============================================================
+
+# ---- Data ----
+data:
+  root: "./VOCdevkit/VOCdevkit"
+  years: ["2007", "2012"]
+  split: "trainval"
+  test_year: "2007"
+  test_split: "test"
+  feature_cache_dir: "./feature_cache"   # Pre-computed conv5_3 maps
+  num_workers: 4
+
+# ---- Model ----
+model:
+  backbone: "vgg16"                      # VGG-16 pretrained ImageNet
+  feature_layer: "conv5_3"              # Pre-compute tại đây
+  fc_layer: "fc6"                        # Dùng fc6 làm feature (4096-d)
+  roi_pool_size: 7                       # ROI Pooling output: 7×7
+  hidden_dim: 1024                       # MLP hidden size (3 lớp)
+  action_history_len: 50                 # 50 hành động gần nhất
+  num_actions: 13                        # 5 scaling + 8 translation
+
+# ---- Actions ----
+actions:
+  # Scaling: sub-window size = 0.55 × current window
+  scaling_ratio: 0.55
+  # Translation: step = 0.25 × current window size
+  translation_ratio: 0.25
+
+# ---- Reward ----
+reward:
+  iou_threshold: 0.5                     # Ngưỡng để tính "hit"
+  first_hit_bonus: 5.0                   # +5 khi hit object lần đầu
+  step_reward_pos: 1.0                   # +1 IoU cải thiện
+  step_reward_neg: -1.0                  # -1 IoU xấu đi
+
+# ---- Training ----
+training:
+  epochs: 25
+  max_steps_per_episode: 50             # Tối đa 50 bước/episode
+  batch_size: 64
+  lr: 0.0001
+  gamma: 0.9                            # Discount factor
+  # Epsilon-greedy annealing
+  eps_start: 1.0
+  eps_end: 0.1
+  eps_decay_epochs: 10                  # Giảm tuyến tính trong 10 epoch đầu
+  # Replay memory
+  replay_capacity: 800000
+  replay_start: 10000                   # Bắt đầu train sau khi có đủ samples
+  target_update_freq: 1000             # Cập nhật target network mỗi N steps
+  checkpoint_dir: "./checkpoints"
+  log_dir: "./runs"
+  save_every: 1                         # Save checkpoint mỗi epoch
+
+# ---- Testing ----
+testing:
+  levels: [5, 8, 10]                    # Tương ứng 31, 255, 1023 proposals
+  iou_thresholds: [0.5, 0.6, 0.7, 0.8, 0.9]
+
+# ---- System ----
+system:
+  seed: 42
+  device: "cuda"                        # "cuda" hoặc "cpu"
+  amp: true                             # Automatic Mixed Precision
